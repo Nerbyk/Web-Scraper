@@ -2,10 +2,15 @@
 
 require 'nokogiri'
 
+BLOCK_TITLE = 'Unauthorized Request Blocked'
 DOMAIN = 'https://alza.cz'
 NAME   = 'Alza'
 
 class AlzaParser < Parser
+  def initialize
+    super 
+    @failed_agents_amount = 0;
+  end 
   def parse_pages(category:, sub_category: '')
     category_url, sub_category_name = if sub_category.nil?
                                         [category['url'], nil]
@@ -13,13 +18,16 @@ class AlzaParser < Parser
                                         [sub_category['url'], sub_category['title']]
                                       end
     category_name = category['title']
-
+                                    
     page_num = 1
     products_amount = 0
 
     response_data = []
     loop do
-      parsed_page = ApiParserClient.parse_page(new_page(category_url, page_num))
+      @api_client = ApiParserClient.new(new_page(category_url, page_num))
+      page = @api_client.parse_page
+
+      parsed_page = validate_page(page)
       break if parsed_page.css('div#boxes').css('div.box').empty?
 
       parsed_page
@@ -63,7 +71,6 @@ class AlzaParser < Parser
         products_amount += 1
       end
       page_num += 1
-      sleep(3)
     end
     @log = Log.new(parser: NAME,
                    data: "pages: #{page_num}, products: #{products_amount}",
@@ -79,8 +86,11 @@ class AlzaParser < Parser
 
   def parse_categories
     response_data = {}
+    
+    @api_client = ApiParserClient.new(DOMAIN)
+    page = @api_client.parse_page
 
-    parsed_page = ApiParserClient.parse_page(DOMAIN)
+    parsed_page = validate_page(page)
 
     parsed_page
       .css('#tpf')
@@ -123,6 +133,18 @@ class AlzaParser < Parser
   end
 
   private
+
+  def validate_page(page)
+   parsed_page = Nokogiri::HTML(page)
+    loop do 
+      break unless parsed_page.css('title').text == BLOCK_TITLE
+      @failed_agents_amount += 1
+      @api_client.user_agents = @api_client.user_agents.drop(@failed_agents_amount)
+      parsed_page = Nokogiri::HTML(@api_client.parse_page)
+      p @api_client.user_agents.length
+    end
+    parsed_page
+  end 
 
   def extract_price(string)
     string.split(/[^\d]/).join.to_i

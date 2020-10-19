@@ -16,6 +16,8 @@ gem 'elasticsearch-rails'
 gem 'httparty'
 gem 'nokogiri'
 gem  'useragent'
+gem 'faraday'
+gem 'faraday_middleware'
 group :test do
   gem 'shoulda-matchers'
 end

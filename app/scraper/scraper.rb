@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-
-
 class Scraper
   attr_reader :name, :data_format, :parser
   def initialize(name:, data_format:)
