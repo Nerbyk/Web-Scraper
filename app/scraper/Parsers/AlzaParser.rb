@@ -138,10 +138,10 @@ class AlzaParser < Parser
    parsed_page = Nokogiri::HTML(page)
     loop do 
       break unless parsed_page.css('title').text == BLOCK_TITLE
+      break if @api_client.user_agents.nil?
       @failed_agents_amount += 1
       @api_client.user_agents = @api_client.user_agents.drop(@failed_agents_amount)
       parsed_page = Nokogiri::HTML(@api_client.parse_page)
-      p @api_client.user_agents.length
     end
     parsed_page
   end 
@@ -154,3 +154,5 @@ class AlzaParser < Parser
     DOMAIN + url.gsub('.htm', '') + '-p' + page_num.to_s + '.htm'
   end
 end
+
+
