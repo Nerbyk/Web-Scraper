@@ -63,6 +63,7 @@ class AlzaParser < Parser
         products_amount += 1
       end
       page_num += 1
+      sleep(3)
     end
     @log = Log.new(parser: NAME,
                    data: "pages: #{page_num}, products: #{products_amount}",
